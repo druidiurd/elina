@@ -23,7 +23,7 @@ ABACUS_API_KEY = "s2_7ef3d5d6f29246498d2c929662499308"
 ABACUS_API_URL = "https://api.abacus.ai/chatllm/v1/chat"
 
 # Ініціалізація Firebase
-cred = credentials.Certificate("/etc/secrets/serviceAccountKey.json")
+cred = credentials.Certificate("serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
