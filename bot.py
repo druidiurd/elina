@@ -20,6 +20,7 @@ db = firestore.client()
 
 # Імпорти модулів (після ініціалізації Firebase)
 from modules.activity_tracker import ActivityTracker
+from modules.keyboard_manager import KeyboardManager
 from modules.user_manager import UserManager, init_db
 
 # Ініціалізуємо базу даних для модулів
@@ -54,7 +55,7 @@ async def cmd_start(message: Message):
 /settings - налаштування
     """
 
-    await message.answer(welcome_text)
+    await message.answer(welcome_text, reply_markup=KeyboardManager.main_menu())
 
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
