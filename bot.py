@@ -17,13 +17,16 @@ import json
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import os
+from config import Config
+
 # Конфігурація
-TELEGRAM_BOT_TOKEN = "8285203127:AAGIvOvSzctyegI3-olZKSqd5KYq55898E8"
-ABACUS_API_KEY = "s2_7ef3d5d6f29246498d2c929662499308"
-ABACUS_API_URL = "https://api.abacus.ai/chatllm/v1/chat"
+TELEGRAM_BOT_TOKEN = Config.TELEGRAM_BOT_TOKEN
+ABACUS_API_KEY = Config.ABACUS_API_KEY
+ABACUS_API_URL = Config.ABACUS_API_URL
 
 # Ініціалізація Firebase
-cred = credentials.Certificate("serviceAccountKey.json")
+cred = credentials.Certificate(Config.FIREBASE_CREDENTIALS_PATH)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
@@ -188,7 +191,7 @@ class ActivityTracker:
             response = requests.post(
                 ABACUS_API_URL,
                 headers={
-                    'Authorization': f'Bearer {{ABACUS_API_KEY}}',
+                    'Authorization': f'Bearer {ABACUS_API_KEY}',
                     'Content-Type': 'application/json'
                 },
                 json={
