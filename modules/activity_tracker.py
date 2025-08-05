@@ -1,9 +1,8 @@
 import re
 import json
-import logging
-from typing import Dict, List
 import requests
-from config import ABACUS_API_KEY, ABACUS_API_URL
+from config import Config
+import logging
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +15,11 @@ class ActivityTracker:
             'rest': ['відпочинок', 'перерва', 'дивлюся', 'читаю', 'слухаю'],
             'cleaning': ['прибирання', 'миття', 'прання', 'порядок'],
             'meeting': ['зустріч з', 'бачився з', 'розмова з'],
-            'drink': ['п\'ю', 'випив', 'кава', 'чай', 'вода']
+            'drink': ['п\'ю', 'випив', 'кава', 'чай', 'вода'],
+            'sleep': ['спати', 'лягаю спати', 'йду спати', 'сон', 'відпочивати', 'засинаю']  # ДОДАНО
         }
 
-    async def detect_activity_type(self, text: str) -> Dict:
+    async def detect_activity_type(self, text: str) -> dict:
         """Визначає тип активності з тексту"""
         text_lower = text.lower()
 
@@ -39,7 +39,7 @@ class ActivityTracker:
         ai_result = await self._analyze_with_ai(text)
         return ai_result
 
-    async def _extract_details(self, text: str, activity_type: str) -> Dict:
+    async def _extract_details(self, text: str, activity_type: str) -> dict:
         """Витягує деталі залежно від типу активності"""
         details = {'description': text}
 
@@ -60,9 +60,13 @@ class ActivityTracker:
             drink_info = self._extract_drink_info(text)
             details.update(drink_info)
 
+        elif activity_type == 'sleep':  # ДОДАНО
+            details['subtype'] = 'sleep'
+            # Можна додати додаткову обробку, наприклад, "нічний сон" чи "денний сон" за часом
+
         return details
 
-    async def _extract_food_items(self, text: str) -> List[str]:
+    async def _extract_food_items(self, text: str) -> list:
         """Витягує продукти з тексту"""
         common_foods = ['курка', 'макарон', 'рис', 'картопля', 'м\'ясо', 'риба', 'овочі']
         found_foods = []
@@ -85,7 +89,7 @@ class ActivityTracker:
         else:
             return 'snack'
 
-    async def _extract_exercise_info(self, text: str) -> Dict:
+    async def _extract_exercise_info(self, text: str) -> dict:
         """Витягує інформацію про вправи"""
         numbers = re.findall(r'\d+', text)
         repetitions = int(numbers[0]) if numbers else 0
@@ -108,7 +112,7 @@ class ActivityTracker:
             'repetitions': repetitions
         }
 
-    def _extract_people(self, text: str) -> List[str]:
+    def _extract_people(self, text: str) -> list:
         """Витягує імена людей з тексту"""
         people = []
         if ' з ' in text.lower():
@@ -119,7 +123,7 @@ class ActivityTracker:
 
         return people
 
-    def _extract_drink_info(self, text: str) -> Dict:
+    def _extract_drink_info(self, text: str) -> dict:
         """Витягує інформацію про напої"""
         drink_types = {
             'вода': 'water',
@@ -141,12 +145,12 @@ class ActivityTracker:
             'amount': amount
         }
 
-    async def _analyze_with_ai(self, text: str) -> Dict:
+    async def _analyze_with_ai(self, text: str) -> dict:
         """Використовує Abacus ChatLLM API для аналізу складних активностей"""
         try:
             prompt = f"""
             Проаналізуй цю активність користувача і визнач:
-            1. Тип активності (meal, work, rest, meeting, cleaning, exercise, drink, other)
+            1. Тип активності (meal, work, rest, meeting, cleaning, exercise, drink, sleep, other)
             2. Підтип (якщо є)
             3. Деталі активності
 
@@ -154,17 +158,17 @@ class ActivityTracker:
 
             Відповідь дай у форматі JSON:
             {{
-                "type": "тип_активності",
-                "subtype": "підтип",
-                "details": {{"description": "опис", "додаткові_поля": "значення"}},
-                "auto_detected": false
+            "type": "тип_активності",
+            "subtype": "підтип",
+            "details": {{"description": "опис", "додаткові_поля": "значення"}},
+            "auto_detected": false
             }}
             """
 
             response = requests.post(
-                ABACUS_API_URL,
+                Config.ABACUS_API_URL,
                 headers={
-                    'Authorization': f'Bearer {ABACUS_API_KEY}',
+                    'Authorization': f'Bearer {Config.ABACUS_API_KEY}',
                     'Content-Type': 'application/json'
                 },
                 json={
