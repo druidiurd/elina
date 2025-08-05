@@ -48,6 +48,24 @@ class UserManager:
         return user_data
 
     @staticmethod
+    async def get_daily_stats(user_id: str, db):
+        today = datetime.now().strftime('%Y-%m-%d')
+        activities_ref = db.collection('activities')
+        query = activities_ref.where('user_id', '==',
+                                     user_id).where('date', '==', today)
+        docs = query.stream()
+
+        stats = {}
+        total = 0
+        for doc in docs:
+            data = doc.to_dict()
+            act_type = data.get('type', 'other')
+            stats[act_type] = stats.get(act_type, 0) + 1
+            total += 1
+
+        return stats, total
+
+    @staticmethod
     async def save_activity(user_id: str, activity_data: Dict, raw_text: str):
         """Зберігає активність в Firestore"""
         now = datetime.utcnow()

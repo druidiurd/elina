@@ -21,6 +21,7 @@ db = firestore.client()
 # Імпорти модулів (після ініціалізації Firebase)
 from modules.activity_tracker import ActivityTracker
 from modules.keyboard_manager import KeyboardManager
+from modules.summary_manager import SummaryManager
 from modules.user_manager import UserManager, init_db
 
 # Ініціалізуємо базу даних для модулів
@@ -32,6 +33,7 @@ dp = Dispatcher()
 
 # Ініціалізація трекера
 tracker = ActivityTracker()
+
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
@@ -55,7 +57,9 @@ async def cmd_start(message: Message):
 /settings - налаштування
     """
 
-    await message.answer(welcome_text, reply_markup=KeyboardManager.main_menu())
+    await message.answer(welcome_text,
+                         reply_markup=KeyboardManager.main_menu())
+
 
 @dp.message(Command("help"))
 async def cmd_help(message: Message):
@@ -77,6 +81,50 @@ async def cmd_help(message: Message):
 
     await message.answer(help_text, parse_mode="Markdown")
 
+
+
+@dp.message(Command("summary"))
+async def cmd_summary(message: Message):
+    user_id = str(message.from_user.id)
+    # За замовчуванням — підсумок дня
+    summary, total, start_date, end_date = SummaryManager.get_summary(user_id, db, period="day")
+    text = SummaryManager.format_summary(summary, total, start_date, end_date)
+    await message.answer(text)
+
+@dp.message(Command("weeksummary"))
+async def cmd_week_summary(message: Message):
+    user_id = str(message.from_user.id)
+    summary, total, start_date, end_date = SummaryManager.get_summary(user_id, db, period="week")
+    text = SummaryManager.format_summary(summary, total, start_date, end_date)
+    await message.answer(text)
+
+
+@dp.message(Command("stats"))
+async def cmd_stats(message: Message):
+    user_id = str(message.from_user.id)
+    stats, total = await UserManager.get_daily_stats(user_id, db)
+    if total == 0:
+        await message.answer("Сьогодні ще немає жодної активності.")
+        return
+
+    stat_lines = [f"Всього активностей: {total}"]
+    for act_type, count in stats.items():
+        emoji = {
+            "meal": "🍽",
+            "exercise": "💪",
+            "sleep": "😴",
+            "work": "🏢",
+            "rest": "🛋",
+            "drink": "💧",
+            "cleaning": "🧹",
+            "meeting": "👥",
+            "other": "❓"
+        }.get(act_type, "❓")
+        stat_lines.append(f"{emoji} {act_type}: {count}")
+
+    await message.answer("\n".join(stat_lines))
+
+
 @dp.message()
 async def handle_activity(message: Message):
     """Обробка звичайних повідомлень як активностей"""
@@ -84,17 +132,15 @@ async def handle_activity(message: Message):
         user = await UserManager.get_or_create_user(message.from_user)
         activity_data = await tracker.detect_activity_type(message.text)
 
-        await UserManager.save_activity(
-            str(message.from_user.id),
-            activity_data,
-            message.text
-        )
+        await UserManager.save_activity(str(message.from_user.id),
+                                        activity_data, message.text)
 
         response = f"✅ Записав: {activity_data['type']}"
         if activity_data['subtype']:
             response += f" ({activity_data['subtype']})"
 
-        if activity_data['type'] == 'meal' and activity_data['details'].get('food_items'):
+        if activity_data['type'] == 'meal' and activity_data['details'].get(
+                'food_items'):
             foods = ', '.join(activity_data['details']['food_items'])
             response += f"\n🍽 Продукти: {foods}"
 
@@ -111,12 +157,15 @@ async def handle_activity(message: Message):
 
     except Exception as e:
         logger.error(f"Помилка при обробці активності: {e}")
-        await message.answer("❌ Виникла помилка при збереженні активності. Спробуй ще раз.")
+        await message.answer(
+            "❌ Виникла помилка при збереженні активності. Спробуй ще раз.")
+
 
 async def main():
     """Запуск бота"""
     logger.info("Запускаю бота...")
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
