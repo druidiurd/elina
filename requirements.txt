@@ -1,0 +1,6 @@
+aiogram==3.4.1
+firebase-admin==6.4.0
+requests==2.31.0
+pytz==2023.3
+python-dotenv==1.0.0
+asyncio==3.4.3
