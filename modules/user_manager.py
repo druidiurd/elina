@@ -7,12 +7,15 @@ from firebase_admin import firestore
 # Отримуємо клієнт Firestore (буде ініціалізований в bot.py)
 db = None
 
+
 def init_db(firestore_client):
     """Ініціалізує клієнт Firestore"""
     global db
     db = firestore_client
 
+
 class UserManager:
+
     @staticmethod
     async def get_or_create_user(telegram_user: types.User) -> Dict:
         """Отримує або створює користувача в Firestore"""
@@ -54,7 +57,9 @@ class UserManager:
         if time_match:
             hour, minute = int(time_match.group(1)), int(time_match.group(2))
             today = datetime.now().date()
-            activity_time = datetime.combine(today, datetime.min.time().replace(hour=hour, minute=minute))
+            activity_time = datetime.combine(
+                today,
+                datetime.min.time().replace(hour=hour, minute=minute))
         else:
             activity_time = now
 

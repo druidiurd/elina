@@ -6,10 +6,8 @@ from aiogram.types import Message
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# Імпорти модулів
+# Імпорти конфігурації
 from config import TELEGRAM_BOT_TOKEN, FIREBASE_KEY_PATH
-from modules.activity_tracker import ActivityTracker
-from modules.user_manager import UserManager, init_db
 
 # Налаштування логування
 logging.basicConfig(level=logging.INFO)
@@ -19,6 +17,10 @@ logger = logging.getLogger(__name__)
 cred = credentials.Certificate(FIREBASE_KEY_PATH)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+# Імпорти модулів (після ініціалізації Firebase)
+from modules.activity_tracker import ActivityTracker
+from modules.user_manager import UserManager, init_db
 
 # Ініціалізуємо базу даних для модулів
 init_db(db)
@@ -38,7 +40,7 @@ async def cmd_start(message: Message):
     welcome_text = f"""
 🤖 Привіт, {user['first_name']}!
 
-Я твій особистий асистент для відстеження активностей. 
+Я твій особистий асистент для відстеження активностей.
 
 Просто пиши мені, що ти робиш, наприклад:
 • "12:45 роблю обід, курку і макарон"
